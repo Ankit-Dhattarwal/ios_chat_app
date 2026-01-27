@@ -1,5 +1,3 @@
-
-
 import UIKit
 import FirebaseAuth
 
@@ -21,6 +19,9 @@ class ChatViewController: UIViewController {
         tableView.dataSource = self
         title = Constants.appName
         navigationItem.hidesBackButton = true
+        
+        
+        tableView.register(UINib(nibName: Constants.cellNibName, bundle: nil), forCellReuseIdentifier: Constants.cellIdentifier)
     }
     
     @IBAction func sendPressed(_ sender: UIButton) {
@@ -44,8 +45,8 @@ extension ChatViewController: UITableViewDataSource{
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: Constants.cellIdentifier, for: indexPath)
-        cell.textLabel?.text = messages[indexPath.row].body
+        let cell = tableView.dequeueReusableCell(withIdentifier: Constants.cellIdentifier, for: indexPath) as! MessageCell
+        cell.label?.text = messages[indexPath.row].body
         return cell;
     }
     
@@ -57,3 +58,4 @@ extension ChatViewController: UITableViewDataSource{
 //        print(indexPath.row)
 //    }
 //}
+
