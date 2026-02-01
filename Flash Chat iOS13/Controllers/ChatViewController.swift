@@ -9,11 +9,7 @@ class ChatViewController: UIViewController {
     
     let db = Firestore.firestore()
     
-    var messages: [Message] = [
-        Message(sender: "ankit@1", body: "Hi"),
-        Message(sender: "ankit@1", body: "How are you"),
-        Message(sender: "ankit@1", body: "What'sApp!")
-    ]
+    var messages: [Message] = []
     override func viewDidLoad() {
         super.viewDidLoad()
 
@@ -53,7 +49,7 @@ class ChatViewController: UIViewController {
     func loadMessages(){
         messages = []
         
-        db.collection(Constants.FStore.collectionName).getDocuments { (querySnapshot, error) in
+        db.collection(Constants.FStore.collectionName).order(by: Constants.FStore.dateField).addSnapshotListener { (querySnapshot, error) in
             if let e = error {
                 print("There is an issue retrieving data from Firestore: \(e)")
             } else if let snapshotDocuments = querySnapshot?.documents {
@@ -68,6 +64,8 @@ class ChatViewController: UIViewController {
                 self.messages = loadedMessages
                 DispatchQueue.main.async {
                     self.tableView.reloadData()
+                    let indexPath = IndexPath(row: self.messages.count - 1, section: 0)
+                    self.tableView.scrollToRow(at: indexPath, at: .top, animated: false)
                 }
             }
         }
@@ -79,14 +77,18 @@ class ChatViewController: UIViewController {
         if let messageBody = messageTextfield.text , let sender = Auth.auth().currentUser?.email {
             db.collection(Constants.FStore.collectionName).addDocument(data: [
                 Constants.FStore.senderField: sender,
-                Constants.FStore.bodyField: messageBody
+                Constants.FStore.bodyField: messageBody,
+                Constants.FStore.dateField: Date().timeIntervalSince1970
             ]){
                 (error) in
                 if let e = error{
                     print("There an issue saving data to Firestore \(e)")
                 }else{
                     print("Successfully data saved.")
-                    self.messageTextfield.text = ""
+                    DispatchQueue.main.async {
+                        self.messageTextfield.text = ""
+                    }
+                
                 }
             }
         }
@@ -110,9 +112,27 @@ extension ChatViewController: UITableViewDataSource{
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        
+        let messages =  messages[indexPath.row]
+        
         let cell = tableView.dequeueReusableCell(withIdentifier: Constants.cellIdentifier, for: indexPath) as! MessageCell
-        cell.label?.text = messages[indexPath.row].body
+        cell.label?.text = messages.body
+        
+        //This message from the current user
+        if messages.sender == Auth.auth().currentUser?.email {
+            cell.rightImageView.isHidden = true
+            cell.leftImageView.isHidden  = false
+            cell.messageBubble.backgroundColor = UIColor(named: Constants.BrandColors.lightPurple)
+            cell.label.textColor = UIColor(named: Constants.BrandColors.purple)
+        }else{
+            cell.rightImageView.isHidden = false
+            cell.leftImageView.isHidden  = true
+            cell.messageBubble.backgroundColor = UIColor(named: Constants.BrandColors.purple)
+            cell.label.textColor = UIColor(named: Constants.BrandColors.lightPurple)
+        }
+        
         return cell;
+        
     }
     
     
